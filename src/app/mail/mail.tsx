@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AccountSwitcher from "./account-switcher";
+import Sidebar from "./sidebar";
 
 type MailProps = {
   defaultLayout: number[] | undefined;
@@ -59,7 +60,7 @@ const Mail = ({
               <AccountSwitcher isCollapsed={isNavCollapsed} />
             </div>
             <Separator />
-            sidebar
+            <Sidebar isCollapsed={isNavCollapsed} />
             <div className="flex-1">Ask AI</div>
           </div>
         </ResizablePanel>

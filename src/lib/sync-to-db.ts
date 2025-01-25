@@ -5,11 +5,8 @@ import { Prisma } from "@prisma/client";
 
 async function syncToDb(emails: EmailMessage[], accountId: string) {
   console.log("syncing to db", emails);
-  const limit = pLimit(10);
+  const limit = pLimit(10); // Limit concurrency to 10
   try {
-    // Promise.all(
-    //   emails.map((email, index) => upsertEmail(email, accountId, index)),
-    // );
     for (const [index, email] of emails.entries()) {
       await limit(() => upsertEmail(email, accountId, index));
     }
@@ -18,27 +15,19 @@ async function syncToDb(emails: EmailMessage[], accountId: string) {
   }
 }
 
-async function upsertEmail(
-  email: EmailMessage,
-  accountId: string,
-  index: number,
-) {
+async function upsertEmail(email: EmailMessage, accountId: string, index: number) {
   console.log("upserting email", index);
-  // Upsert the email message in the database
 
   try {
+    // Determine email label type
     let emailLabelType: "inbox" | "sent" | "draft" = "inbox";
-    if (
-      email.sysLabels.includes("inbox") ||
-      email.sysLabels.includes("important")
-    ) {
-      emailLabelType = "inbox";
-    } else if (email.sysLabels.includes("sent")) {
+    if (email.sysLabels.includes("sent")) {
       emailLabelType = "sent";
     } else if (email.sysLabels.includes("draft")) {
       emailLabelType = "draft";
     }
 
+    // Upsert email addresses
     const addressToUpsert = new Map();
     for (const address of [
       email.from,
@@ -50,16 +39,18 @@ async function upsertEmail(
       addressToUpsert.set(address.address, address);
     }
 
-    const upsertedAddresses: Awaited<ReturnType<typeof upsertEmailAddress>>[] =
-      [];
+    const upsertedAddresses: Awaited<ReturnType<typeof upsertEmailAddress>>[] = [];
     for (const address of addressToUpsert.values()) {
       const upsertedAddress = await upsertEmailAddress(address, accountId);
+      if (upsertedAddress) {
+        upsertedAddresses.push(upsertedAddress);
+      }
     }
 
     const addressMap = new Map(
       upsertedAddresses
         .filter(Boolean)
-        .map((address) => [address!.address, address]),
+        .map((address) => [address!.address, address])
     );
 
     const fromAddress = addressMap.get(email.from.address);
@@ -80,7 +71,16 @@ async function upsertEmail(
       .map((address) => addressMap.get(address.address))
       .filter(Boolean);
 
-    // 2. Upsert Thread
+    // Upsert Thread
+    const participantIds = [
+      ...new Set([
+        fromAddress.id,
+        ...toAddresses.map((a) => a!.id),
+        ...ccAddresses.map((a) => a!.id),
+        ...bccAddresses.map((a) => a!.id),
+      ]),
+    ];
+
     const thread = await db.thread.upsert({
       where: { id: email.threadId },
       update: {
@@ -88,14 +88,7 @@ async function upsertEmail(
         accountId,
         lastMessageDate: new Date(email.sentAt),
         done: false,
-        participantIds: [
-          ...new Set([
-            fromAddress.id,
-            ...toAddresses.map((a) => a!.id),
-            ...ccAddresses.map((a) => a!.id),
-            ...bccAddresses.map((a) => a!.id),
-          ]),
-        ],
+        participantIds,
       },
       create: {
         id: email.threadId,
@@ -106,18 +99,11 @@ async function upsertEmail(
         inboxStatus: emailLabelType === "inbox",
         sentStatus: emailLabelType === "sent",
         lastMessageDate: new Date(email.sentAt),
-        participantIds: [
-          ...new Set([
-            fromAddress.id,
-            ...toAddresses.map((a) => a!.id),
-            ...ccAddresses.map((a) => a!.id),
-            ...bccAddresses.map((a) => a!.id),
-          ]),
-        ],
+        participantIds,
       },
     });
 
-    // 3. Upsert Email
+    // Upsert Email
     await db.email.upsert({
       where: { id: email.id },
       update: {
@@ -183,6 +169,7 @@ async function upsertEmail(
       },
     });
 
+    // Update Thread Folder Status
     const threadEmails = await db.email.findMany({
       where: { threadId: thread.id },
       orderBy: { receivedAt: "asc" },
@@ -192,9 +179,9 @@ async function upsertEmail(
     for (const threadEmail of threadEmails) {
       if (threadEmail.emailLabel === "inbox") {
         threadFolderType = "inbox";
-        break; // If any email is in inbox, the whole thread is in inbox
+        break;
       } else if (threadEmail.emailLabel === "draft") {
-        threadFolderType = "draft"; // Set to draft, but continue checking for inbox
+        threadFolderType = "draft";
       }
     }
     await db.thread.update({
@@ -206,80 +193,76 @@ async function upsertEmail(
       },
     });
 
-    // 4. Upsert Attachments
+    // Upsert Attachments
     for (const attachment of email.attachments) {
+      if (!attachment.id) {
+        console.warn(`Attachment ID missing for email ${email.id}. Skipping.`);
+        continue;
+      }
       await upsertAttachment(email.id, attachment);
     }
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      console.log(`Prisma error for email ${email.id}: ${error.message}`);
+      console.error(`Prisma error for email ${email.id}: ${error.message}`);
     } else {
-      console.log(`Unknown error for email ${email.id}: ${error}`);
+      console.error(`Unknown error for email ${email.id}:`, error);
     }
   }
 }
 
 async function upsertEmailAddress(address: EmailAddress, accountId: string) {
   try {
-    const existingAddress = await db.emailAddress.findUnique({
+    return await db.emailAddress.upsert({
       where: {
         accountId_address: {
           accountId: accountId,
           address: address.address ?? "",
         },
       },
+      update: {
+        name: address.name,
+        raw: address.raw,
+      },
+      create: {
+        name: address.name,
+        address: address.address ?? "",
+        accountId: accountId,
+        raw: address.raw,
+      },
     });
-    if (existingAddress) {
-      return await db.emailAddress.update({
-        where: { id: existingAddress.id },
-        data: {
-          name: address.name,
-          raw: address.raw,
-        },
-      });
-    } else {
-      return await db.emailAddress.create({
-        data: {
-          name: address.name,
-          address: address.address ?? "",
-          accountId: accountId,
-          raw: address.raw,
-        },
-      });
-    }
   } catch (error) {
-    console.log("Error upserting email address:", error);
+    console.error("Error upserting email address:", error);
     return null;
   }
 }
 
 async function upsertAttachment(emailId: string, attachment: EmailAttachment) {
   try {
-      await db.emailAttachment.upsert({
-          where: { id: attachment.id ?? "" },
-          update: {
-              name: attachment.name,
-              mimeType: attachment.mimeType,
-              size: attachment.size,
-              inline: attachment.inline,
-              contentId: attachment.contentId,
-              content: attachment.content,
-              contentLocation: attachment.contentLocation,
-          },
-          create: {
-              id: attachment.id,
-              emailId,
-              name: attachment.name,
-              mimeType: attachment.mimeType,
-              size: attachment.size,
-              inline: attachment.inline,
-              contentId: attachment.contentId,
-              content: attachment.content,
-              contentLocation: attachment.contentLocation,
-          },
-      });
+    await db.emailAttachment.upsert({
+      where: { id: attachment.id },
+      update: {
+        name: attachment.name,
+        mimeType: attachment.mimeType,
+        size: attachment.size,
+        inline: attachment.inline,
+        contentId: attachment.contentId,
+        content: attachment.content,
+        contentLocation: attachment.contentLocation,
+      },
+      create: {
+        id: attachment.id,
+        emailId,
+        name: attachment.name,
+        mimeType: attachment.mimeType,
+        size: attachment.size,
+        inline: attachment.inline,
+        contentId: attachment.contentId,
+        content: attachment.content,
+        contentLocation: attachment.contentLocation,
+      },
+    });
   } catch (error) {
-      console.log(`Failed to upsert attachment for email ${emailId}: ${error}`);
+    console.error(`Failed to upsert attachment for email ${emailId}:`, error);
   }
 }
 
