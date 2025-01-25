@@ -2,6 +2,8 @@ import { exchangeCodeForToken, getAccountInfo } from "@/lib/aurinko";
 import { db } from "@/server/db";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
+import axios from "axios";
 
 export const GET = async (req: NextRequest) => {
   try {
@@ -49,17 +51,32 @@ export const GET = async (req: NextRequest) => {
     }
 
     // Upsert account details in the database
+    const accountId = token.accountId.toString();
     await db.account.upsert({
-      where: { id: token.accountId.toString() },
+      where: { id: accountId },
       update: { accessToken: token.accessToken },
       create: {
-        id: token.accountId.toString(),
+        id: accountId,
         userId,
         emailAddress: accountInfo.email,
         name: accountInfo.name,
         accessToken: token.accessToken,
       },
     });
+
+    waitUntil(
+      axios
+        .post(`${process.env.NEXT_PUBLIC_BASE_URL}/api/initial-sync`, {
+          accountId,
+          userId,
+        })
+        .then((res) => {
+          console.log(res.data);
+        })
+        .catch((err) => {
+          console.log(err.response.data);
+        }),
+    );
 
     // Redirect the user to the mail page
     return NextResponse.redirect(new URL("/mail", req.url));
