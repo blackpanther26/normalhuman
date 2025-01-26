@@ -1,22 +1,25 @@
 "use client";
+import ThemeToggle from "@/components/theme-toggle";
 import dynamic from "next/dynamic";
 import React from "react";
 
-// Dynamically import the Mail component
 const Mail = dynamic(() => import("./mail"), {
-  ssr: false, // Disable server-side rendering for this component
-  loading: () => <p>Loading...</p>, // Optional: Add a loading fallback
+  ssr: false,
+  loading: () => <p>Loading...</p>,
 });
 
 const MailDashboard = () => {
   return (
-    <div>
+    <>
+    <div className="absolute bottom-4 left-4">
+      <ThemeToggle />
+    </div>
       <Mail
         defaultLayout={[20, 32, 48]}
         defaultNavCollapsed={false}
         navCollapsedSize={4}
       />
-    </div>
+    </>
   );
 };
 
