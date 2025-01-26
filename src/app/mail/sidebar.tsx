@@ -26,8 +26,7 @@ const Sidebar = (props: Props) => {
     accountId,
     tab: "drafts",
   });
-  console.log("hellooooo")
-  console.log(inboxThreads, sentThreads, draftThreads);
+
   return (
     <Nav
       isCollapsed={props.isCollapsed}

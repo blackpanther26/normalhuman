@@ -48,22 +48,71 @@ export const accountRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       const account = await authoriseAccountAccess(
         input.accountId,
-        ctx.auth?.userId as string,
+        ctx.auth?.userId,
       );
-      const filter: Prisma.ThreadWhereInput = {};
+      let filter: Prisma.ThreadWhereInput = {};
       if (input.tab === "inbox") {
         filter.inboxStatus = true;
       } else if (input.tab === "drafts") {
         filter.draftStatus = true;
       } else if (input.tab === "sent") {
         filter.sentStatus = true;
-      } else {
-        throw new Error("Invalid tab");
       }
+
       return await ctx.db.thread.count({
         where: {
-          accountId: input.accountId,
+          accountId: account.id,
           ...filter,
+        },
+      });
+    }),
+  getThread: privateProcedure
+    .input(
+      z.object({
+        accountId: z.string(),
+        tab: z.string(),
+        done: z.boolean().optional(),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const account = await authoriseAccountAccess(
+        input.accountId,
+        ctx.auth?.userId,
+      );
+      let filter: Prisma.ThreadWhereInput = {};
+      if (input.tab === "inbox") {
+        filter.inboxStatus = true;
+      } else if (input.tab === "drafts") {
+        filter.draftStatus = true;
+      } else if (input.tab === "sent") {
+        filter.sentStatus = true;
+      }
+      if (input.done) {
+        filter.done = true;
+      }
+
+      return await ctx.db.thread.findMany({
+        where: filter,
+        include: {
+          emails: {
+            orderBy: {
+              sentAt: "asc",
+            },
+            select: {
+              from: true,
+              body: true,
+              bodySnippet: true,
+              emailLabel: true,
+              subject: true,
+              sysLabels: true,
+              id: true,
+              sentAt: true,
+            },
+          },
+        },
+        take: 15,
+        orderBy: {
+          lastMessageDate: "desc",
         },
       });
     }),
