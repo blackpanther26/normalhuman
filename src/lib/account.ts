@@ -17,7 +17,7 @@ export class Account {
           Authorization: `Bearer ${this.token}`,
         },
         params: {
-          daysWithin: 7,
+          daysWithin: 30,
           bodyType: "html",
         },
       },
@@ -57,7 +57,6 @@ export class Account {
     try {
       // start the initial sync process
       let syncResponse = await this.startSync();
-      console.log("Sync response:", syncResponse);
       while (!syncResponse.ready) {
         // wait for the sync to complete
         await new Promise((resolve) => setTimeout(resolve, 1000));

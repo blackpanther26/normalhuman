@@ -32,9 +32,6 @@ const Mail = ({
     <TooltipProvider delayDuration={0}>
       <ResizablePanelGroup
         direction="horizontal"
-        onLayout={(sizes: number[]) => {
-          console.log(sizes);
-        }}
         className="h-full min-h-screen items-stretch"
       >
         <ResizablePanel

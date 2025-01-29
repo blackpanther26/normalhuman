@@ -34,6 +34,5 @@ export const POST = async (req: NextRequest) => {
   });
 
   await syncToDb(emails, accountId);
-  console.log('sync complete',deltaToken);
   return NextResponse.json({ emails, deltaToken });
 };

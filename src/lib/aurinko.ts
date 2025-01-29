@@ -39,8 +39,6 @@ export const exchangeCodeForToken = async (
   code: string,
 ): Promise<{ accountId: number; accessToken: string } | null> => {
   try {
-    console.log("Exchanging code for token:", code);
-
     const response = await axios.post(
       `${AURINKO_API_BASE}/auth/token/${code}`,
       {},
@@ -51,8 +49,6 @@ export const exchangeCodeForToken = async (
         },
       },
     );
-
-    console.log("Token exchange successful:", response.data);
     return response.data;
   } catch (error) {
     handleAxiosError(error, "Error during token exchange");

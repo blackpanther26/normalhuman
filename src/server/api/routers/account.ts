@@ -87,9 +87,6 @@ export const accountRouter = createTRPCRouter({
       } else if (input.tab === "sent") {
         filter.sentStatus = true;
       }
-      if (input.done) {
-        filter.done = true;
-      }
 
       return await ctx.db.thread.findMany({
         where: filter,
@@ -110,7 +107,7 @@ export const accountRouter = createTRPCRouter({
             },
           },
         },
-        take: 15,
+        take: 30,
         orderBy: {
           lastMessageDate: "desc",
         },

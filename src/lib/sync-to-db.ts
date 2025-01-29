@@ -4,8 +4,7 @@ import pLimit from "p-limit";
 import { Prisma } from "@prisma/client";
 
 async function syncToDb(emails: EmailMessage[], accountId: string) {
-  console.log("syncing to db", emails);
-  const limit = pLimit(10); // Limit concurrency to 10
+  const limit = pLimit(10); 
   try {
     for (const [index, email] of emails.entries()) {
       await limit(() => upsertEmail(email, accountId, index));
@@ -16,10 +15,8 @@ async function syncToDb(emails: EmailMessage[], accountId: string) {
 }
 
 async function upsertEmail(email: EmailMessage, accountId: string, index: number) {
-  console.log("upserting email", index);
 
   try {
-    // Determine email label type
     let emailLabelType: "inbox" | "sent" | "draft" = "inbox";
     if (email.sysLabels.includes("sent")) {
       emailLabelType = "sent";
