@@ -113,4 +113,82 @@ export const accountRouter = createTRPCRouter({
         },
       });
     }),
+  getSuggestions: privateProcedure
+    .input(
+      z.object({
+        accountId: z.string(),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const account = await authoriseAccountAccess(
+        input.accountId,
+        ctx.auth?.userId,
+      );
+      return await ctx.db.emailAddress.findMany({
+        where: {
+          accountId: account.id,
+        },
+        select: {
+          address: true,
+          name: true,
+        },
+      });
+    }),
+  getReplyDetails: privateProcedure
+    .input(
+      z.object({
+        accountId: z.string(),
+        threadId: z.string(),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const account = await authoriseAccountAccess(
+        input.accountId,
+        ctx.auth?.userId,
+      );
+      const thread = await ctx.db.thread.findFirst({
+        where: {
+          id: input.threadId,
+        },
+        include: {
+          emails: {
+            orderBy: {
+              sentAt: "asc",
+            },
+            select: {
+              from: true,
+              to: true,
+              cc: true,
+              bcc: true,
+              sentAt: true,
+              subject: true,
+              internetMessageId: true,
+            },
+          },
+        },
+      });
+      if (!thread || thread.emails.length === 0) {
+        throw new Error("Thread not found");
+      }
+      const lastExternalEmail = thread.emails.reverse().find((email) => {
+        return email.from?.address !== account.emailAddress;
+      });
+      if (!lastExternalEmail) {
+        throw new Error("No external emails found");
+      }
+      return {
+        to: [
+          lastExternalEmail.from,
+          ...lastExternalEmail.to.filter(
+            (t) => t.address !== account.emailAddress,
+          ),
+        ],
+        cc: lastExternalEmail.cc.filter(
+          (t) => t.address !== account.emailAddress,
+        ),
+        from: { name: account.name, address: account.emailAddress },
+        subject: lastExternalEmail.subject,
+        id: lastExternalEmail.internetMessageId,
+      };
+    }),
 });
