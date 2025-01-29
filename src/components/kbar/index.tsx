@@ -10,6 +10,9 @@ import {
 } from "kbar";
 import RenderResults from "./render-results";
 import { useLocalStorage } from "usehooks-ts";
+import useThemeSwitching from "./use-theme-switching";
+import { use } from "react";
+import useAccountSwitching from "./use-account-switching";
 
 export default function KBar({ children }: { children: React.ReactNode }) {
   const [tab, setTab] = useLocalStorage("normalhuman-tab", "inbox");
@@ -59,6 +62,8 @@ export default function KBar({ children }: { children: React.ReactNode }) {
 }
 
 const ActualComponent = ({ children }: { children: React.ReactNode }) => {
+  useThemeSwitching();
+  useAccountSwitching();
   return (
     <>
       <KBarPortal>
