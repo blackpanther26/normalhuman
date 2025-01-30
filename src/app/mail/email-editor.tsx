@@ -9,6 +9,11 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import TagInput from "./tag-input";
 import { Input } from "@/components/ui/input";
+import AiComposeButton from "./ai-compose-button";
+import { generateEmailAutocomplete } from "./action";
+import { turndown } from "@/lib/turndown";
+import { readStreamableValue } from "ai/rsc";
+import useThreads from "@/hooks/use-threads";
 
 type Props = {
   subject: string;
@@ -35,19 +40,49 @@ const EmailEditor = ({
   isSending,
   defaultToolbarExpanded,
 }: Props) => {
+  if (!defaultToolbarExpanded) {
+    defaultToolbarExpanded = false;
+  }
+
   const [value, setValue] = React.useState<string>("");
-  const [expanded, setExpanded] = React.useState<boolean>(defaultToolbarExpanded||false);
+  const [expanded, setExpanded] = React.useState(defaultToolbarExpanded);
+  const { threads, threadId, account } = useThreads();
+  const thread = threads?.find((thread) => thread.id === threadId);
+
+  let context = "";
+  for (const email of thread?.emails ?? []) {
+    context += `
+      Subject: ${email.subject}
+      From: ${email.from}
+      Sent: ${new Date(email.sentAt).toLocaleString()}
+      Body: ${turndown.turndown(email.body ?? email.bodySnippet ?? "")}
+    `;
+  }
+  context += `My name is ${account?.name} and my email is ${account?.emailAddress}`;
+  const aiGenerate = async () => {
+    const { output } = await generateEmailAutocomplete(context, value);
+    
+    let generatedText = "";
+    for await (const token of readStreamableValue(output)) {
+      generatedText += token;
+    }
+
+    if (generatedText) {
+      editor?.chain().focus().insertContent(generatedText).run();
+    }
+  };
+
   const CustomText = Text.extend({
     addKeyboardShortcuts() {
       return {
-        "Meta-j": () => {
-          console.log("meta-j");
+        "Mod-j": () => {
+          aiGenerate();
           return true;
         },
       };
     },
   });
-
+  
   const editor = useEditor({
     autofocus: false,
     extensions: [StarterKit, CustomText],
@@ -59,6 +94,10 @@ const EmailEditor = ({
   if (!editor) {
     return null;
   }
+
+  const onGenerate = (token: string) => {
+    editor.chain().focus().insertContent(token).run();
+  };
 
   return (
     <div>
@@ -94,9 +133,13 @@ const EmailEditor = ({
             className="cursor-pointer"
             onClick={() => setExpanded(!expanded)}
           >
-          <span className="font-medium text-green-600">Draft {" "}</span>
-          <span>to {(to ?? []).join(", ")}</span>
+            <span className="font-medium text-green-600">Draft </span>
+            <span>to {(to ?? []).join(", ")}</span>
           </div>
+          <AiComposeButton
+            isComposing={defaultToolbarExpanded}
+            onGenerate={onGenerate}
+          />
         </div>
       </div>
 
@@ -113,7 +156,7 @@ const EmailEditor = ({
           for AI autocomplete
         </span>
         <Button
-          onClick={async() => {
+          onClick={async () => {
             editor?.commands.clearContent();
             await handleSend(value);
           }}
