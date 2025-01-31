@@ -11,9 +11,8 @@ import TagInput from "./tag-input";
 import { Input } from "@/components/ui/input";
 import AiComposeButton from "./ai-compose-button";
 import { generateEmailAutocomplete } from "./action";
-import { turndown } from "@/lib/turndown";
 import { readStreamableValue } from "ai/rsc";
-import useThreads from "@/hooks/use-threads";
+import { Loader2 } from "lucide-react";
 
 type Props = {
   subject: string;
@@ -28,6 +27,21 @@ type Props = {
   defaultToolbarExpanded?: boolean;
 };
 
+const LoadingOverlay = () => (
+  <div className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-[2px]">
+    <div className="flex flex-col items-center space-y-4 rounded-xl bg-white/90 p-6 shadow-lg">
+      <div className="relative h-12 w-12">
+        <Loader2 className="absolute animate-spin text-gray-900" size={48} />
+        <div className="absolute h-12 w-12 animate-pulse rounded-full bg-green-100/50" />
+      </div>
+      <div className="space-y-1 text-center">
+        <p className="text-sm font-medium text-gray-900">Generating Content</p>
+        <p className="text-xs text-gray-500">Using AI to compose your email...</p>
+      </div>
+    </div>
+  </div>
+);
+
 const EmailEditor = ({
   subject,
   setSubject,
@@ -38,23 +52,27 @@ const EmailEditor = ({
   to,
   handleSend,
   isSending,
-  defaultToolbarExpanded,
+  defaultToolbarExpanded = false,
 }: Props) => {
-  if (!defaultToolbarExpanded) {
-    defaultToolbarExpanded = false;
-  }
-
   const [value, setValue] = React.useState<string>("");
   const [expanded, setExpanded] = React.useState(defaultToolbarExpanded);
-  const [token,setToken]=React.useState<string>("");
+  const [token, setToken] = React.useState<string>("");
+  const [isGenerating, setIsGenerating] = React.useState(false);
 
   const aiGenerate = async () => {
-    const { output } = await generateEmailAutocomplete(value);
-    for await (const token of readStreamableValue(output)) {
-      if (token) {
-        setToken(token);
-        editor?.commands?.insertContent(token);
+    try {
+      setIsGenerating(true);
+      const { output } = await generateEmailAutocomplete(value);
+      for await (const token of readStreamableValue(output)) {
+        if (token) {
+          setToken(token);
+          editor?.commands?.insertContent(token);
+        }
       }
+    } catch (error) {
+      console.error("Error generating content:", error);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -84,7 +102,14 @@ const EmailEditor = ({
   }, [token, editor]);
 
   if (!editor) {
-    return null;
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <p className="text-sm text-gray-500">Initializing editor...</p>
+        </div>
+      </div>
+    );
   }
 
   const onGenerate = (token: string) => {
@@ -92,7 +117,9 @@ const EmailEditor = ({
   };
 
   return (
-    <div>
+    <div className="relative">
+      {isGenerating && <LoadingOverlay />}
+      
       <div className="flex border-b p-4 py-2">
         <EditorMenuBar editor={editor} />
       </div>
@@ -103,13 +130,13 @@ const EmailEditor = ({
             <TagInput
               label="To"
               onChange={setToValue}
-              placeholder="Add Recepients"
+              placeholder="Add Recipients"
               value={toValue}
             />
             <TagInput
               label="Cc"
               onChange={setCcValue}
-              placeholder="Add Recepients"
+              placeholder="Add Recipients"
               value={ccValue}
             />
             <Input
@@ -152,7 +179,7 @@ const EmailEditor = ({
             editor?.commands.clearContent();
             await handleSend(value);
           }}
-          disabled={isSending}
+          disabled={isSending || isGenerating}
         >
           Send
         </Button>
