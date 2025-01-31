@@ -46,29 +46,15 @@ const EmailEditor = ({
 
   const [value, setValue] = React.useState<string>("");
   const [expanded, setExpanded] = React.useState(defaultToolbarExpanded);
-  const { threads, threadId, account } = useThreads();
-  const thread = threads?.find((thread) => thread.id === threadId);
+  const [token,setToken]=React.useState<string>("");
 
-  let context = "";
-  for (const email of thread?.emails ?? []) {
-    context += `
-      Subject: ${email.subject}
-      From: ${email.from}
-      Sent: ${new Date(email.sentAt).toLocaleString()}
-      Body: ${turndown.turndown(email.body ?? email.bodySnippet ?? "")}
-    `;
-  }
-  context += `My name is ${account?.name} and my email is ${account?.emailAddress}`;
   const aiGenerate = async () => {
-    const { output } = await generateEmailAutocomplete(context, value);
-    
-    let generatedText = "";
+    const { output } = await generateEmailAutocomplete(value);
     for await (const token of readStreamableValue(output)) {
-      generatedText += token;
-    }
-
-    if (generatedText) {
-      editor?.chain().focus().insertContent(generatedText).run();
+      if (token) {
+        setToken(token);
+        editor?.commands?.insertContent(token);
+      }
     }
   };
 
@@ -90,6 +76,12 @@ const EmailEditor = ({
       setValue(editor.getHTML());
     },
   });
+
+  React.useEffect(() => {
+    if (token) {
+      editor?.commands?.insertContent(token);
+    }
+  }, [token, editor]);
 
   if (!editor) {
     return null;

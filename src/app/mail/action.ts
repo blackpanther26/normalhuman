@@ -35,7 +35,7 @@ export async function generateEmail(prompt: string, context: string) {
   return { output: stream.value };
 }
 
-export async function generateEmailAutocomplete(context: string, partialText: string) {
+export async function generateEmailAutocomplete(partialText: string) {
   const stream = createStreamableValue();
 
   (async () => {
@@ -45,7 +45,6 @@ export async function generateEmailAutocomplete(context: string, partialText: st
       const result = await model.generateContentStream(`
         Continue writing the following professional email:
 
-        Context: ${context}
         Partial Email: ${partialText}
 
         Ensure the completion is relevant, professional, and flows naturally.
