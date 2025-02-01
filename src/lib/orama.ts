@@ -39,6 +39,7 @@ export class OramaClient {
           to: "string[]",
           sentAt: "string",
           threadId: "string",
+          embeddings: "vector[768]",
         },
       });
       await this.saveIndex();

@@ -5,7 +5,7 @@ import { api } from "@/trpc/react";
 import { useDebounceValue } from "usehooks-ts";
 import useThreads from "@/hooks/use-threads";
 import DOMPurify from "dompurify";
-import { Loader2, Mail, User, Users } from "lucide-react";
+import { Mail, User, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
