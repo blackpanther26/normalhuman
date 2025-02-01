@@ -40,6 +40,7 @@ export const accountRouter = createTRPCRouter({
       },
     });
   }),
+
   getNumThreads: privateProcedure
     .input(
       z.object({
@@ -68,6 +69,7 @@ export const accountRouter = createTRPCRouter({
         },
       });
     }),
+
   getThread: privateProcedure
     .input(
       z.object({
@@ -81,6 +83,10 @@ export const accountRouter = createTRPCRouter({
         input.accountId,
         ctx.auth?.userId,
       );
+
+      const acc = new Account(account.accessToken);
+      acc.syncEmails().catch(console.error);
+
       let filter: Prisma.ThreadWhereInput = {};
       if (input.tab === "inbox") {
         filter.inboxStatus = true;
@@ -115,6 +121,7 @@ export const accountRouter = createTRPCRouter({
         },
       });
     }),
+
   getSuggestions: privateProcedure
     .input(
       z.object({
@@ -136,6 +143,7 @@ export const accountRouter = createTRPCRouter({
         },
       });
     }),
+
   getReplyDetails: privateProcedure
     .input(
       z.object({
@@ -193,6 +201,7 @@ export const accountRouter = createTRPCRouter({
         id: lastExternalEmail.internetMessageId,
       };
     }),
+
   sendEmail: privateProcedure
     .input(
       z.object({

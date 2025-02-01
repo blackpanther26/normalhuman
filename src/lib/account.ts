@@ -5,6 +5,8 @@ import {
   SyncResponse,
   SyncUpdatedResponse,
 } from "./types";
+import { db } from "@/server/db";
+import { syncToDb } from "./sync-to-db";
 
 export class Account {
   private token: string;
@@ -102,6 +104,61 @@ export class Account {
       } else {
         console.error(error);
       }
+    }
+  }
+
+  async syncEmails() {
+    const account = await db.account.findUnique({
+      where: {
+        accessToken: this.token,
+      },
+    });
+    if (!account) {
+      throw new Error("Account not found");
+    }
+    if (!account.nextDeltaToken) {
+      throw new Error("Account not synced");
+    }
+
+    let response = await this.getUpdatedRecords({
+      deltaToken: account.nextDeltaToken,
+    });
+
+    let storedDeltaToken = account.nextDeltaToken;
+    let allEmails: EmailMessage[] = response.records;
+
+    if (response.nextDeltaToken) {
+      storedDeltaToken = response.nextDeltaToken;
+    }
+    
+    while (response.nextPageToken) {
+      response = await this.getUpdatedRecords({
+        pageToken: response.nextPageToken,
+      });
+      allEmails = allEmails.concat(response.records);
+      if (response.nextDeltaToken) {
+        storedDeltaToken = response.nextDeltaToken;
+      }
+    }
+
+    try {
+      syncToDb(allEmails, account.id);
+    } catch (error) {
+      console.error("Error during sync", error);
+    }
+
+    await db.account.update({
+      where: {
+        id: account.id,
+      },
+      data: {
+        nextDeltaToken: storedDeltaToken,
+      },
+    });
+
+    return {
+      emails: allEmails,
+      deltaToken: storedDeltaToken,
     }
   }
 
