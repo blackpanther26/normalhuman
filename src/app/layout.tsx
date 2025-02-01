@@ -6,6 +6,7 @@ import { type Metadata } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TRPCReactProvider } from "@/trpc/react";
 import KBar from "@/components/kbar";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -27,7 +28,10 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <TRPCReactProvider>
-              <KBar>{children}</KBar>
+              <KBar>
+                {children}
+                <Toaster />
+              </KBar>
             </TRPCReactProvider>
           </ThemeProvider>
         </body>

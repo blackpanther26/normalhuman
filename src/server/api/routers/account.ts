@@ -2,6 +2,8 @@ import { z } from "zod";
 import { createTRPCRouter, privateProcedure } from "../trpc";
 import { db } from "@/server/db";
 import { Prisma } from "@prisma/client";
+import { emailAddressSchema } from "@/lib/types";
+import { Account } from "@/lib/account";
 
 export const authoriseAccountAccess = async (
   accountId: string,
@@ -190,5 +192,41 @@ export const accountRouter = createTRPCRouter({
         subject: lastExternalEmail.subject,
         id: lastExternalEmail.internetMessageId,
       };
+    }),
+  sendEmail: privateProcedure
+    .input(
+      z.object({
+        accountId: z.string(),
+        body: z.string(),
+        subject: z.string(),
+        from: emailAddressSchema,
+        cc: z.array(emailAddressSchema).optional(),
+        bcc: z.array(emailAddressSchema).optional(),
+        to: z.array(emailAddressSchema),
+        threadId: z.string(),
+        inReplyTo: z.string().optional(),
+        replyTo: emailAddressSchema.optional(),
+        references: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const account = await authoriseAccountAccess(
+        input.accountId,
+        ctx.auth?.userId,
+      );
+      const acc = new Account(account.accessToken);
+
+      await acc.sendEmail({
+        from: input.from,
+        subject: input.subject,
+        body: input.body,
+        inReplyTo: input.inReplyTo,
+        threadId: input.threadId,
+        references: input.threadId,
+        to: input.to,
+        cc: input.cc,
+        bcc: input.bcc,
+        replyTo: input.replyTo,
+      });
     }),
 });
