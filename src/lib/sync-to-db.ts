@@ -15,17 +15,23 @@ async function syncToDb(emails: EmailMessage[], accountId: string) {
     for (const email of emails) {
       const body = turndown.turndown(email.body ?? email.bodySnippet ?? "");
       const embeddings = await getEmbeddings(body);
-      console.log(embeddings.values.length);
-      await orama.insert({
-        subject: email.subject,
-        body: body,
-        from: email.from.address,
-        rawBody: email.bodySnippet ?? "",
-        to: email.to.map((a) => a.address),
-        sentAt: email.sentAt,
-        threadId: email.threadId,
-        embeddings,
-      });
+      try {
+        console.log(`Inserting email: ${email.subject}`);
+        await orama.insert({
+          subject: email.subject ?? "",
+          body: body ?? "",
+          from: email.from?.address ?? "",
+          rawBody: email.bodySnippet ?? "",
+          to: email.to?.map((a) => a.address) ?? [],
+          sentAt: email.sentAt ?? new Date(),
+          threadId: email.threadId ?? "",
+          embeddings,
+        });
+
+        console.log(`Successfully inserted: ${email.subject}`);
+      } catch (insertError) {
+        console.error(`Failed to insert email: ${email.subject}`, insertError);
+      }
       await limit(() => upsertEmail(email, accountId));
     }
   } catch (error) {
