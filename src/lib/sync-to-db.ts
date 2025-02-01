@@ -2,20 +2,34 @@ import { db } from "@/server/db";
 import { EmailAddress, EmailAttachment, EmailMessage } from "./types";
 import pLimit from "p-limit";
 import { Prisma } from "@prisma/client";
+import { OramaClient } from "./orama";
+import { turndown } from "./turndown";
 
 async function syncToDb(emails: EmailMessage[], accountId: string) {
-  const limit = pLimit(10); 
+  const limit = pLimit(10);
+
+  const orama = new OramaClient(accountId);
+  await orama.initialize();
   try {
-    for (const [index, email] of emails.entries()) {
-      await limit(() => upsertEmail(email, accountId, index));
+    for (const email of emails) {
+      const body = turndown.turndown(email.body ?? email.bodySnippet ?? "");
+      await orama.insert({
+        subject: email.subject,
+        body: body,
+        from: email.from.address,
+        rawBody: email.bodySnippet ?? "",
+        to: email.to.map((a) => a.address),
+        sentAt: email.sentAt,
+        threadId: email.threadId,
+      });
+      await limit(() => upsertEmail(email, accountId));
     }
   } catch (error) {
     console.error("Error syncing emails to the database:", error);
   }
 }
 
-async function upsertEmail(email: EmailMessage, accountId: string, index: number) {
-
+async function upsertEmail(email: EmailMessage, accountId: string) {
   try {
     let emailLabelType: "inbox" | "sent" | "draft" = "inbox";
     if (email.sysLabels.includes("sent")) {
@@ -36,7 +50,8 @@ async function upsertEmail(email: EmailMessage, accountId: string, index: number
       addressToUpsert.set(address.address, address);
     }
 
-    const upsertedAddresses: Awaited<ReturnType<typeof upsertEmailAddress>>[] = [];
+    const upsertedAddresses: Awaited<ReturnType<typeof upsertEmailAddress>>[] =
+      [];
     for (const address of addressToUpsert.values()) {
       const upsertedAddress = await upsertEmailAddress(address, accountId);
       if (upsertedAddress) {
@@ -47,7 +62,7 @@ async function upsertEmail(email: EmailMessage, accountId: string, index: number
     const addressMap = new Map(
       upsertedAddresses
         .filter(Boolean)
-        .map((address) => [address!.address, address])
+        .map((address) => [address!.address, address]),
     );
 
     const fromAddress = addressMap.get(email.from.address);

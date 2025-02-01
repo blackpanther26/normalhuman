@@ -13,6 +13,7 @@ import AccountSwitcher from "./account-switcher";
 import Sidebar from "./sidebar";
 import ThreadList from "./thread-list";
 import ThreadDisplay from "./thread-display";
+import SearchBar from "./search-bar";
 
 type MailProps = {
   defaultLayout: number[] | undefined;
@@ -84,7 +85,7 @@ const Mail = ({
               </TabsList>
             </div>
             <Separator />
-            Search Bar
+            <SearchBar />
             <TabsContent value="inbox">
               <ThreadList />
             </TabsContent>
