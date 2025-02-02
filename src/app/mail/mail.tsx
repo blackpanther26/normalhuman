@@ -14,6 +14,7 @@ import Sidebar from "./sidebar";
 import ThreadList from "./thread-list";
 import ThreadDisplay from "./thread-display";
 import SearchBar from "./search-bar";
+import AskAi from "./ask-ai";
 
 type MailProps = {
   defaultLayout: number[] | undefined;
@@ -61,7 +62,9 @@ const Mail = ({
             </div>
             <Separator />
             <Sidebar isCollapsed={isNavCollapsed} />
-            <div className="flex-1">Ask AI</div>
+            <div className="flex-1">
+              <AskAi isCollapsed={isNavCollapsed} />
+            </div>
           </div>
         </ResizablePanel>
         <ResizableHandle withHandle />
@@ -96,7 +99,7 @@ const Mail = ({
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={defaultLayout[2]} minSize={30}>
-          <ThreadDisplay/>
+          <ThreadDisplay />
         </ResizablePanel>
       </ResizablePanelGroup>
     </TooltipProvider>

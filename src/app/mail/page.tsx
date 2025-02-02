@@ -3,6 +3,7 @@ import ThemeToggle from "@/components/theme-toggle";
 import { UserButton } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
 import React from "react";
+import Loader from "@/components/loader";
 
 const ComposeButton = dynamic(() => import("./compose-button"), {
   ssr: false,
@@ -11,7 +12,7 @@ const ComposeButton = dynamic(() => import("./compose-button"), {
 
 const Mail = dynamic(() => import("./mail"), {
   ssr: false,
-  loading: () => <p>Loading...</p>,
+  loading: () => <Loader />,
 });
 
 const MailDashboard = () => {
