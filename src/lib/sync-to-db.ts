@@ -25,7 +25,7 @@ async function syncToDb(emails: EmailMessage[], accountId: string) {
           to: email.to?.map((a) => a.address) ?? [],
           sentAt: email.sentAt ?? new Date(),
           threadId: email.threadId ?? "",
-          embeddings,
+          embeddings: embeddings.values,
         });
 
         console.log(`Successfully inserted: ${email.subject}`);
