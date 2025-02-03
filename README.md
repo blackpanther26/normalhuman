@@ -73,4 +73,4 @@ yarn dev
 
 # Deployment
 
-The application is deployed on Vercel : [NormalHuman](https://normalhuman.vercel.app/)
+The application is deployed on Vercel : [NormalHuman](https://normalhuman-two.vercel.app/)
