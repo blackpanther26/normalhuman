@@ -45,7 +45,7 @@ const EmailDisplay = ({ email }: Props) => {
       <div className="mt-2 max-w-full overflow-hidden break-words">
         <Letter
           html={email?.body ?? ""}
-          className="rounded-md bg-white text-black"
+          className="rounded-md bg-white p-4 text-black"
         />
       </div>
     </div>
