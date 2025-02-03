@@ -146,7 +146,7 @@ const AskAi = ({ isCollapsed }: { isCollapsed: boolean }) => {
           <div className="relative flex-1">
             <input
               type="text"
-              className="w-full rounded-full border border-gray-200 bg-white px-3 py-2 text-sm"
+              className="w-full rounded-full border border-gray-200 bg-white px-3 py-2 text-sm text-black"
               placeholder="Type your message..."
               value={input}
               onChange={handleInputChange}
