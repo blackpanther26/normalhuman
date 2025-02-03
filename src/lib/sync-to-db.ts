@@ -15,8 +15,8 @@ async function syncToDb(emails: EmailMessage[], accountId: string) {
     for (const email of emails) {
       const body = turndown.turndown(email.body ?? email.bodySnippet ?? "");
       const embeddings = await getEmbeddings(body);
+
       try {
-        console.log(`Inserting email: ${email.subject}`);
         await orama.insert({
           subject: email.subject ?? "",
           body: body ?? "",
@@ -27,11 +27,10 @@ async function syncToDb(emails: EmailMessage[], accountId: string) {
           threadId: email.threadId ?? "",
           embeddings: embeddings.values,
         });
-
-        console.log(`Successfully inserted: ${email.subject}`);
       } catch (insertError) {
         console.error(`Failed to insert email: ${email.subject}`, insertError);
       }
+
       await limit(() => upsertEmail(email, accountId));
     }
   } catch (error) {
@@ -48,7 +47,6 @@ async function upsertEmail(email: EmailMessage, accountId: string) {
       emailLabelType = "draft";
     }
 
-    // Upsert email addresses
     const addressToUpsert = new Map();
     for (const address of [
       email.from,
