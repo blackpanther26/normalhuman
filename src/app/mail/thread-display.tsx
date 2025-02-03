@@ -16,7 +16,6 @@ import {
   MoreVertical,
   Trash2,
   Inbox,
-  Search,
 } from "lucide-react";
 import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

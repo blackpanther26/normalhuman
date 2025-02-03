@@ -58,7 +58,7 @@ export class OramaClient {
 
   async vectorSearch(prompt: string) {
     const embeddings = await getEmbeddings(prompt);
-    console.log("Embeddings:", embeddings);
+
     const results = await search(this.orama, {
       mode: "hybrid",
       term: prompt,

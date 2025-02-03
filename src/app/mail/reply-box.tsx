@@ -4,7 +4,6 @@ import React from "react";
 import EmailEditor from "./email-editor";
 import { api, RouterOutputs } from "@/trpc/react";
 import useThreads from "@/hooks/use-threads";
-import { send } from "process";
 import { toast } from "sonner";
 
 const ReplyBox = () => {
@@ -63,31 +62,34 @@ const Component = ({
     if (!replyDetails) {
       return;
     }
-    sendEmail.mutate({
-      accountId,
-      threadId: threadId ?? "",
-      body: value,
-      subject,
-      from: replyDetails.from,
-      to: replyDetails.to.map((to) => ({
-        address: to.address,
-        name: to.name ?? "",
-      })),
-      cc: replyDetails.cc.map((cc) => ({
-        address: cc.address,
-        name: cc.name ?? "",
-      })),
-      replyTo: replyDetails.from,
-      inReplyTo: replyDetails.id,
-    },{
-      onSuccess: () => {
-        toast.success("Email sent");
+    sendEmail.mutate(
+      {
+        accountId,
+        threadId: threadId ?? "",
+        body: value,
+        subject,
+        from: replyDetails.from,
+        to: replyDetails.to.map((to) => ({
+          address: to.address,
+          name: to.name ?? "",
+        })),
+        cc: replyDetails.cc.map((cc) => ({
+          address: cc.address,
+          name: cc.name ?? "",
+        })),
+        replyTo: replyDetails.from,
+        inReplyTo: replyDetails.id,
       },
-      onError: (error) => {
-        console.error(error);
-        toast.error("Failed to send email");
+      {
+        onSuccess: () => {
+          toast.success("Email sent");
+        },
+        onError: (error) => {
+          console.error(error);
+          toast.error("Failed to send email");
+        },
       },
-    });
+    );
   };
 
   return (
