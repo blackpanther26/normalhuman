@@ -1,29 +1,76 @@
-# Create T3 App
+# 📧 NormalHuman: AI-Powered Email Client
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+## 🌟 Overview
 
-## What's next? How do I make an app with this?
+NormalHuman is an email client that integrates AI technologies to revolutionize your email experience. By leveraging the Gemini API, the application provides intelligent email assistance without compromising your data privacy by sending emails to external services.
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+## 🚀 Key Features
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+- **AI-Powered Email Assistance**
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+  - Autocomplete emails using AI
+  - Generate intelligent email responses with Gemini API
+  - Enhance productivity with writing suggestions
 
-## Learn More
+- **Comprehensive Email Management**
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+  - Send and receive emails effortlessly
+  - Advanced email search functionality
+  - Multi-account support
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+- **User Experience**
+  - Dark/Light theme toggle
+  - Secure authentication
+  - Intuitive and responsive design
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+## 🛠 Frameworks used
 
-## How do I deploy this?
+Next.js, Prisma, Tailwind CSS, Gemini API, TypeScript , Aurinko, Clerk
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+## 📦 Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- Node.js (v18+ recommended)
+- npm or Yarn
+- Git
+
+## 🔧 Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/blackpanther26/normalhuman
+cd normalhuman
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+# or
+yarn install
+```
+
+### 3. Environment Configuration
+
+Create a `.env` file in the root directory and add the environment variables from the `.env.example` file.
+
+### 4. Database Setup
+
+```bash
+npx prisma generate
+npx prisma migrate dev
+```
+
+### 5. Run the Development Server
+
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+# Deployment
+
+The application is deployed on Vercel : [NormalHuman](https://normalhuman.vercel.app/)
